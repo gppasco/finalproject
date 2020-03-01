@@ -10,22 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Repo URL:
+https://github.com/gppasco/finalproject
 
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## About my data sources:
+I was able to find a .csv file of all NYT crosswords from 2009-2016 on the Internet, with information including a puzzle's day of publication, its author, each clue in the puzzle and the corresponding answer. I also found a website (https://laxcrossword.com/) that has the same information, but for the Los Angeles Times. I plan to scrape that website and format it in the same way as the NYT dataframe, in order to work with both datasets more easily. I plan to get all the data into the repo within the next few days, after some amount of cleanup.
