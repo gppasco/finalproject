@@ -9,6 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Link to repo
+[Here it is!](https://github.com/gppasco/finalproject)
+
 ## About the Data
 
 The .csv file about the New York Times crossword was from a public source, coming from another project that analyzed the clues and answers for the New York Times puzzle. I've looked at the structure of it (year of publication, day of week, clue, answer, and fact about the answer), and started to formulate questions that can be answered with the available data. There are a few evident ones (how does clue difficulty escalate with day of the week, how diverse are the places/names mentioned in the clues/answers, etc). Some of these questions require the formation of a metric for quantifying clue difficulty, which might be tricky, but a tight metric might bring up interesting observations.
