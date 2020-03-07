@@ -1,0 +1,16 @@
+---
+title: "about_data"
+author: "paolo pasco"
+date: "3/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## About the Data
+
+The .csv file about the New York Times crossword was from a public source, coming from another project that analyzed the clues and answers for the New York Times puzzle. I've looked at the structure of it (year of publication, day of week, clue, answer, and fact about the answer), and started to formulate questions that can be answered with the available data. There are a few evident ones (how does clue difficulty escalate with day of the week, how diverse are the places/names mentioned in the clues/answers, etc). Some of these questions require the formation of a metric for quantifying clue difficulty, which might be tricky, but a tight metric might bring up interesting observations.
+
+I'm planning on getting more data from the LA times in a similar format, by scraping it from [this website](https://laxcrossword.com/). From here, examining puzzles from the two sources can raise some more interesting questions (how do references differ between the NYT and LAT crosswords, which one is "harder" for each day of the week, etc.)
