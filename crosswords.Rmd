@@ -1,0 +1,39 @@
+---
+title: "crosswords"
+author: "paolo pasco"
+date: "3/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(janitor)
+library(readxl)
+```
+
+```{r reading, echo=FALSE}
+nyt <- read_excel("NYT_Crossword_2009_2016.xlsx")
+
+# Finding the top ten most frequently appearing words in the NY times crossword.
+# Surprised personally that ONO isn't on the list, but it falls just short at 59
+# appearances. Still hoping to do the same with the LA times crossword, but
+# scraping is proving to be an interesting process.
+
+nyttop10 <- nyt %>%
+  group_by(Word) %>%
+  summarize(times=n()) %>%
+  arrange(desc(times)) %>%
+  slice(1:10)
+
+# Creating the graph! Stole the labeling idea from the latest problem set, so
+# thank you very much for that.
+
+ggplot(nyttop10, aes(x=reorder(Word, -times), y=times)) + geom_col() +
+  xlab("Word") +
+  ylab("Number of Appearances") +
+  ggtitle("Ten most common words in the New York Times crossword",
+          subtitle="Based on crosswords from 2009-2016") +
+  geom_text(aes(y=times + 3, label=times))
+```
