@@ -19,7 +19,9 @@ nyt <- read_excel("NYT_Crossword_2009_2016.xlsx")
 # Finding the top ten most frequently appearing words in the NY times crossword.
 # Surprised personally that ONO isn't on the list, but it falls just short at 59
 # appearances. Still hoping to do the same with the LA times crossword, but
-# scraping is proving to be an interesting process.
+# scraping is proving to be an interesting process. Added some of the scraped LA
+# times .csv file to show the state of things; still working on how to separate
+# them into lines
 
 nyttop10 <- nyt %>%
   group_by(Word) %>%
