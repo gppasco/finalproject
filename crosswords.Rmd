@@ -45,6 +45,13 @@ ggplot(nyttop10, aes(x=reorder(Word, -times), y=times)) + geom_col() +
 latimes <- read.csv("latimes.csv")
 
 latimes2 <- latimes %>%
-  mutate(clues = map(clues, ~ str_split(., "[1234567890][.]"))) %>%
-  unnest(clues)
+  mutate(clues = map(clues, ~ str_split(., "[1234567890]+[.]"))) %>%
+  unnest(clues) %>%
+  unnest(clues) %>%
+  mutate(clues = map(clues, ~str_split(., "  "))) %>%
+  unnest(clues) %>%
+  mutate(clue = map(clues, ~.[2]),
+         answer = map(clues, ~.[3])) %>%
+  filter(!is.na(answer)) %>%
+  select(-clues)
 ```
