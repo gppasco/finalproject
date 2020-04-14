@@ -14,7 +14,11 @@ library(readxl)
 ```
 
 ```{r reading, echo=FALSE}
-nyt <- read_excel("NYT_Crossword_2009_2016.xlsx")
+nyt <- read_excel("NYT_Crossword_2009_2016.xlsx") %>%
+  select(-Explanation) %>%
+  mutate(Word = map(Word, ~ str_split(., "[(]"))) %>%
+  unnest(Word) %>%
+  mutate(Word = map(Word, ~ .[1]))
 
 # Finding the top ten most frequently appearing words in the NY times crossword.
 # Surprised personally that ONO isn't on the list, but it falls just short at 59
@@ -28,6 +32,9 @@ nyttop10 <- nyt %>%
   summarize(times=n()) %>%
   arrange(desc(times)) %>%
   slice(1:10)
+
+# Slider for date
+# Different difficulty for word length?
 
 # Creating the graph! Stole the labeling idea from the latest problem set, so
 # thank you very much for that.
@@ -45,13 +52,89 @@ ggplot(nyttop10, aes(x=reorder(Word, -times), y=times)) + geom_col() +
 latimes <- read.csv("latimes.csv")
 
 latimes2 <- latimes %>%
+  
+  # Getting the clues onto their own lines
+  
   mutate(clues = map(clues, ~ str_split(., "[1234567890]+[.]"))) %>%
   unnest(clues) %>%
   unnest(clues) %>%
   mutate(clues = map(clues, ~str_split(., "  "))) %>%
   unnest(clues) %>%
-  mutate(clue = map(clues, ~.[2]),
-         answer = map(clues, ~.[3])) %>%
-  filter(!is.na(answer)) %>%
-  select(-clues)
+  mutate(Clue = map(clues, ~.[2]),
+         Word = map(clues, ~.[3])) %>%
+  filter(!is.na(Word)) %>%
+  select(-c(clues, web.scraper.order)) %>%
+  
+  # Getting parentheticals out of words
+  mutate(Word = map(Word, ~ str_split(., "[ ]+[(]"))) %>%
+  unnest(Word) %>%
+  mutate(Word = map(Word, ~ .[1])) %>%
+  
+  # Separating out weekdays, getting dates into workable format
+  
+  rename(date = web.scraper.start.url)%>%
+  mutate(date = map(date, ~str_split(., "/"))) %>%
+  unnest(date) %>%
+  mutate(year = map_chr(date, ~ .[4]),
+         date = map(date, ~ paste(.[4],.[5],.[6], sep = "-"))) %>%
+  mutate(date = map(date, ~ as.Date(.)),
+         weekday = map_chr(date, ~weekdays(.))) %>%
+  mutate(date = map_chr(date, ~as.character(.)))
+```
+
+```{r analyze, echo=FALSE}
+
+# Function that finds the length of a given entry, stripping spaces and punctuation
+wordlen <- function(word) {
+  new <- str_replace_all(word, "[[:punct:]]|\\s", "")
+  str_length(new)
+}
+
+# Average word length vs. day of week
+
+total_length <- function(x) {
+   total_temp <- mutate(x, length = wordlen(x$Word))
+   summarize(total_temp, sum = sum(total_temp$length))
+}
+
+# Finding the average word length by day of week in LA Times crosswords
+
+latimes_avg <- latimes2 %>%
+  mutate(length = wordlen(Word)) %>%
+  group_by(date) %>%
+  summarize(weekday = weekday[1],
+            avg_length = sum(length)/n())
+
+# Graphing average word length by day of week in LA Times crosswords
+
+latimes_avg %>%
+  mutate(weekday = fct_relevel(weekday, "Monday", "Tuesday", "Wednesday", "Thursday",
+                               "Friday", "Saturday", "Sunday")) %>%
+  ggplot(aes(x = weekday, y = avg_length)) +
+  geom_boxplot() +
+  labs(x = "Weekday", y = "Average Word Length",
+       title = "Average Word Length of LAT Crosswords by Weekday")
+
+# Doing the same for NYT puzzles
+
+nyt_avg <- nyt %>%
+  mutate(length = wordlen(Word)) %>%
+  group_by(Year,Weekday) %>%
+  summarize(avg_length = sum(length)/n())
+
+nyt_avg %>%
+  mutate(Weekday = fct_relevel(Weekday, "Mon", "Tue", "Wed", "Thu",
+                               "Fri", "Sat", "Sun")) %>%
+  ggplot(aes(x = Weekday, y = avg_length)) +
+  geom_boxplot() +
+  labs(x = "Weekday", y = "Average Word Length",
+       title = "Average Word Length of NYT Crosswords by Weekday")
+
+
+```
+
+```{r uniqueness, echo = FALSE}
+
+# Which crosswords reuse answers less frequently?
+
 ```
