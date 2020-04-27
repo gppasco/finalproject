@@ -1,0 +1,12 @@
+name: crossword_shiny
+title: crossword_shiny
+username:
+account: paolo-pasco
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2193454
+bundleId: 3071003
+url: https://paolo-pasco.shinyapps.io/crossword_shiny/
+when: 1587981274.85714
+asMultiple: FALSE
+asStatic: FALSE

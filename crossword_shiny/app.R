@@ -24,14 +24,14 @@ joined <- read_rds("joined.rds")
 
 ui <- navbarPage("Crosswords!", theme = shinytheme("simplex"),
                  
-tabPanel("Home",
+# tabPanel("Home",
          
-         fluidPage(
+#          fluidPage(
              
-             titlePanel("Analysis of New York Times and Los Angeles Times Crosswords"),
+#              titlePanel("Analysis of New York Times and Los Angeles Times Crosswords"),
              
-             p(paste("Add introduction here!"))
-         )),
+#              p(paste("Add introduction here!"))
+#          )),
 
 ############################
 #       COMMON WORDS       #
@@ -124,7 +124,30 @@ tabPanel("Word Length vs. Difficulty",
          
          tabPanel("Further Analysis",
                   
-                  h3("Analysis"))
+                  h3("Further Analysis of Word Length vs. Difficulty"),
+                  
+                  br(),
+                  
+                  p("In this page, I conducted a detailed regression on word length
+                     versus day of week (as a proxy for difficulty) on Los Angeles
+                     Times crosswords. I only used LA Times crosswords since my method
+                     of scraping allowed me to collect the date for each puzzle in the
+                     dataframe (as opposed to the NY Times data, which only contains
+                     the year), allowing me to treat each individual puzzle as a data 
+                     point. An initial linear regression using a linear model returns
+                     the following:"),
+                  
+                  br(),
+                  
+                  plotOutput("regplot"),
+                  
+                  br(),
+                  
+                  p("The intercepts are with respect to Friday as a baseline for 
+                    comparison. Based on the findings, we can reasonably conclude
+                    that, between Monday and Saturday, as the day of the week increases,
+                    the word length also increases.")
+                  )
          
          )), 
          
@@ -167,7 +190,19 @@ tabPanel("About",
          
          fluidPage(
              
-             titlePanel("About")
+             tabPanel("About",
+                        h3("Project Summary"),
+                        p("This project analyzes crosswords that ran in the New York Times and the Los Angeles Times, looking
+                          at which words commonly appear in each crossword, and what factors influence the difficulty of the
+                          crossword. Data from the New York Times was sourced from ", 
+                          a("Max Deutsch's project", href="https://medium.com/@maxdeutsch/how-i-mastered-the-saturday-nyt-crossword-puzzle-in-31-days-fe6a094edccd"),
+                          " on the New York Times crossword. Data from the Los Angeles Times was scraped from ", a("the website LAXCrossword.com.", href="https://laxcrossword.com/")),
+                        h3("About Me"), 
+                        p("My name is Paolo Pasco and I am a sophomore in the Gov 1005 class at Harvard University. 
+                            I am currently concentrating in computer science, but after taking this class, who knows ;) 
+                            My side job is writing crosswords, some of which have appeared in the New York Times and Los Angeles Times.
+                            I promise that doesn't make this a conflict of interest.
+                            Feel free to contact me at gcpasco@college.harvard.edu with any comments or questions!"),)
              
          ))
 
@@ -226,7 +261,19 @@ server <- function(input, output, session) {
  ############################
  #       WORD LENGTH        #
  ############################ 
-
+      # Function that finds the length of a given entry, stripping spaces and punctuation
+      wordlen <- function(word) {
+        new <- str_replace_all(word, "[[:punct:]]|\\s", "")
+        str_length(new)
+      }
+      
+      # Average word length vs. day of week
+      
+      total_length <- function(x) {
+        total_temp <- mutate(x, length = wordlen(x$Word))
+        summarize(total_temp, sum = sum(total_temp$length))
+      }
+      
       observe({
         
         leng_filtered <- 
@@ -251,7 +298,15 @@ server <- function(input, output, session) {
             labs(x = "Weekday", y = "Average Word Length",
                  title = "Average Word Length of Crosswords by Weekday")
         )
-      })      
+      })
+      
+      output$regplot <- renderImage({
+        # Find the image
+        list(src = "regression.png",
+             width = 500,
+             height = 400,
+             alt = "This was supposed to be a graph, woof")
+      }, deleteFile = FALSE)
       
       
     
