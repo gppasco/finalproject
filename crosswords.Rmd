@@ -14,11 +14,14 @@ library(readxl)
 ```
 
 ```{r reading, echo=FALSE}
-nyt <- read_excel("NYT_Crossword_2009_2016.xlsx") %>%
+nyt <- read_excel("raw-data/NYT_Crossword_2009_2016.xlsx") %>%
   select(-Explanation) %>%
   mutate(Word = map(Word, ~ str_split(., "[(]"))) %>%
   unnest(Word) %>%
-  mutate(Word = map(Word, ~ .[1]))
+  mutate(Word = map(Word, ~ .[1])) %>%
+  mutate(Word = map(Word, ~ str_replace_all(., "[[:punct:]]|\\s", ""))) %>%
+  mutate(Outlet = "NYT") %>%
+  select(-Total)
 
 # Finding the top ten most frequently appearing words in the NY times crossword.
 # Surprised personally that ONO isn't on the list, but it falls just short at 59
@@ -28,6 +31,7 @@ nyt <- read_excel("NYT_Crossword_2009_2016.xlsx") %>%
 # them into lines
 
 nyttop10 <- nyt %>%
+  unnest(Word) %>%
   group_by(Word) %>%
   summarize(times=n()) %>%
   arrange(desc(times)) %>%
@@ -49,7 +53,8 @@ ggplot(nyttop10, aes(x=reorder(Word, -times), y=times)) + geom_col() +
 
 ```{r lat, echo = FALSE}
 
-latimes <- read.csv("latimes.csv")
+latimes <- read.csv("raw-data/latimes2.csv", header=FALSE,
+                    col.names = c("web.scraper.start.url", "clues"))
 
 latimes2 <- latimes %>%
   
@@ -63,23 +68,30 @@ latimes2 <- latimes %>%
   mutate(Clue = map(clues, ~.[2]),
          Word = map(clues, ~.[3])) %>%
   filter(!is.na(Word)) %>%
-  select(-c(clues, web.scraper.order)) %>%
+  select(-c(clues)) %>%
   
   # Getting parentheticals out of words
   mutate(Word = map(Word, ~ str_split(., "[ ]+[(]"))) %>%
   unnest(Word) %>%
   mutate(Word = map(Word, ~ .[1])) %>%
+  mutate(Word = map(Word, ~ str_replace_all(., "[[:punct:]]|\\s", ""))) %>%
   
   # Separating out weekdays, getting dates into workable format
   
   rename(date = web.scraper.start.url)%>%
   mutate(date = map(date, ~str_split(., "/"))) %>%
   unnest(date) %>%
-  mutate(year = map_chr(date, ~ .[4]),
+  mutate(Year = as.double(map_chr(date, ~ .[4])),
          date = map(date, ~ paste(.[4],.[5],.[6], sep = "-"))) %>%
   mutate(date = map(date, ~ as.Date(.)),
-         weekday = map_chr(date, ~weekdays(.))) %>%
-  mutate(date = map_chr(date, ~as.character(.)))
+         Weekday = map_chr(date, ~weekdays(., abbreviate=TRUE))) %>%
+  select(-date) %>%
+  unnest(Clue) %>%
+  mutate(Outlet = "LAT")
+```
+
+```{r binding, echo=FALSE}
+joined <- bind_rows(nyt, latimes2)
 ```
 
 ```{r analyze, echo=FALSE}
@@ -129,12 +141,23 @@ nyt_avg %>%
   geom_boxplot() +
   labs(x = "Weekday", y = "Average Word Length",
        title = "Average Word Length of NYT Crosswords by Weekday")
+```
 
-
+```{r writing, echo = FALSE}
+write_rds(latimes2, "final_shiny/latimes.rds")
+write_rds(nyt, "final_shiny/nytimes.rds")
+write_rds(joined, "final_shiny/joined.rds")
 ```
 
 ```{r uniqueness, echo = FALSE}
 
-# Which crosswords reuse answers less frequently?
+# What clues/answers show up more often in more difficult (i.e. later-week) puzzles?
+
+```
+
+```{r references, echo = FALSE}
+
+# Does the LA Times crossword reference certain people/places more than the NY
+# Times puzzle? What about geographic/country/gender diversity of references?
 
 ```
