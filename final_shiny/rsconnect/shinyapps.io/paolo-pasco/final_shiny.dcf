@@ -5,8 +5,8 @@ account: paolo-pasco
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2059076
-bundleId: 3064787
+bundleId: 3070107
 url: https://paolo-pasco.shinyapps.io/final_shiny/
-when: 1587852169.1053
+when: 1587965562.87346
 asMultiple: FALSE
 asStatic: FALSE

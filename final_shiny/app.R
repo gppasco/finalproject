@@ -43,6 +43,10 @@ tabPanel("Common Words",
              
              titlePanel("Common Words Per Year"),
              
+             p(paste("Select an outlet and a year to see the ten most common crossword
+                     answers in that outlet for year. Note that short, vowel-heavy
+                     answers are predominant among the commonly-used answers.")),
+             
              sidebarLayout(
                sidebarPanel(
                  
@@ -73,45 +77,64 @@ tabPanel("Common Words",
 
 tabPanel("Word Length vs. Difficulty",
          
-         fluidPage(
-             
-             titlePanel("Analysis of Word Length vs. Difficulty"),
-             
-             # Sidebar with a slider input for number of bins. Will adapt to include 
-             # NYT and LAT later on.
-             
-             sidebarLayout(
-               sidebarPanel(
-                 helpText("Choose a year:"),
-                 selectInput("year", h3("Year"),
-                             choices = list("2010",
-                                            "2011",
-                                            "2012",
-                                            "2013",
-                                            "2014",
-                                            "2015",
-                                            "2016"))
-               ),
-               
-               # Show a plot of the generated distribution
-               mainPanel(
-                 plotOutput("plot")
-               )
-             )
-             
+         tabsetPanel(
+           
+           tabPanel("Exploration",
+                    
+             fluidPage(
+                 
+                 titlePanel("Exploration of Word Length vs. Difficulty"),
+                 
+                 p(paste("Conventionally, the difficulty of New York Times and Los Angeles Times
+                           crosswords increases with the day of the week, strictly increasing from
+                           Monday to Saturday. (Sunday, while larger in size, is normally intended
+                           to be as difficult as a Thursday puzzle). We can use this as a framework
+                           to analyze difficulty versus word length. As this introductory analysis
+                         shows, there is a general positive relationship between difficulty and word 
+                         length from Monday to Saturday, while Sunday is an anomaly due to its 
+                         different grid.")),
+                 
+                 br(),
+                 
+                 p(paste("Note that on some days of the week, outlets will run 'themeless' puzzles.
+                         These generally have lower word counts, and therefore longer words. The NYT
+                         runs themeless puzzles on Fridays and Saturdays, while the LAT runs themeless
+                         puzzles on Saturdays only. This is why those outlets have spikes in word length
+                         at those specific days of the week.")),
+                 
+                 sidebarLayout(
+                   
+                   sidebarPanel(
+                     
+                     helpText("Choose an outlet:"),
+                     
+                     selectInput("leng_outlet", h3("Outlet"),
+                                 choices = list("NYT",
+                                                "LAT",
+                                                "Both")),
+                   ),
+                   
+                   # Show a plot of the generated distribution
+                   mainPanel(
+                     plotOutput("lengplot")
+                   )
+                 )
+                 
          )),
+         
+         tabPanel("Further Analysis",
+                  
+                  h3("Analysis"))
+         
+         )), 
+         
+          
 
 #############################
 #      CLUE REFERENCES      #
 #############################  
 
-tabPanel("Clue References",
-         
-         fluidPage(
-             
-             titlePanel("Geographic/Gender Diversity in Clue References")
-             
-         )),
+
 
 #############################
 #      EXPLORE ANSWERS      #
@@ -194,12 +217,44 @@ server <- function(input, output, session) {
           geom_col() +
           xlab("Word") +
           ylab("Number of Appearances") +
-          ggtitle("Ten most common words in the New York Times crossword",
-                  subtitle="Based on crosswords from 2010-2016") +
+          ggtitle(paste("Ten most common words in the ", input$comm_outlet, " crossword"),
+                  subtitle=paste("Based on crosswords from ", input$comm_year)) +
           geom_text(aes(y=times + 0.5, label=times))
       )
     })
-  
+
+ ############################
+ #       WORD LENGTH        #
+ ############################ 
+
+      observe({
+        
+        leng_filtered <- 
+          if(input$leng_outlet %in% c("NYT", "LAT")) {
+            filter(joined, Outlet == input$leng_outlet & Word != "")
+          } else {
+            joined
+          }
+        
+        
+        leng = leng_filtered %>% 
+          mutate(length = wordlen(Word)) %>%
+          group_by(Year,Weekday) %>%
+          summarize(avg_length = sum(length)/n())
+        
+        output$lengplot <- renderPlot(
+          leng %>%
+            mutate(Weekday = fct_relevel(Weekday, "Mon", "Tue", "Wed", "Thu",
+                                         "Fri", "Sat", "Sun")) %>%
+            ggplot(aes(x = Weekday, y = avg_length)) +
+            geom_boxplot() +
+            labs(x = "Weekday", y = "Average Word Length",
+                 title = "Average Word Length of Crosswords by Weekday")
+        )
+      })      
+      
+      
+    
   #############################
   #       EXPLORE WORDS       #
   #############################  

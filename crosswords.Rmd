@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(janitor)
 library(readxl)
+library(broom)
+library(gt)
 ```
 
 ```{r reading, echo=FALSE}
@@ -85,13 +87,13 @@ latimes2 <- latimes %>%
          date = map(date, ~ paste(.[4],.[5],.[6], sep = "-"))) %>%
   mutate(date = map(date, ~ as.Date(.)),
          Weekday = map_chr(date, ~weekdays(., abbreviate=TRUE))) %>%
-  select(-date) %>%
+  mutate(date = map(date, ~ as.character(.))) %>%
   unnest(Clue) %>%
   mutate(Outlet = "LAT")
 ```
 
 ```{r binding, echo=FALSE}
-joined <- bind_rows(nyt, latimes2)
+joined <- bind_rows(nyt, select(latimes2, -date))
 ```
 
 ```{r analyze, echo=FALSE}
@@ -113,16 +115,15 @@ total_length <- function(x) {
 
 latimes_avg <- latimes2 %>%
   mutate(length = wordlen(Word)) %>%
-  group_by(date) %>%
-  summarize(weekday = weekday[1],
-            avg_length = sum(length)/n())
+  group_by(Year, Weekday) %>%
+  summarize(avg_length = sum(length)/n())
 
 # Graphing average word length by day of week in LA Times crosswords
 
 latimes_avg %>%
-  mutate(weekday = fct_relevel(weekday, "Monday", "Tuesday", "Wednesday", "Thursday",
-                               "Friday", "Saturday", "Sunday")) %>%
-  ggplot(aes(x = weekday, y = avg_length)) +
+  mutate(Weekday = fct_relevel(Weekday, "Mon", "Tue", "Wed", "Thu",
+                               "Fri", "Sat", "Sun")) %>%
+  ggplot(aes(x = Weekday, y = avg_length)) +
   geom_boxplot() +
   labs(x = "Weekday", y = "Average Word Length",
        title = "Average Word Length of LAT Crosswords by Weekday")
@@ -141,6 +142,40 @@ nyt_avg %>%
   geom_boxplot() +
   labs(x = "Weekday", y = "Average Word Length",
        title = "Average Word Length of NYT Crosswords by Weekday")
+
+```
+
+```{r regression}
+# Working with just LA times, since I am able to get specific dates
+lat_reg <- latimes2 %>%
+  mutate(length = wordlen(Word)) %>%
+  unnest(date) %>%
+  group_by(date, Weekday) %>%
+  summarize(avg_length = sum(length)/n())
+
+lat_model <- lm(avg_length ~ Weekday, data = lat_reg)
+
+
+lat_model2 <- lat_model %>%
+  tidy(conf.int=TRUE) %>%
+  select(term, estimate, conf.low, conf.high) %>%
+  gt() %>%
+  tab_header(
+    title = "Regression on Day of Week versus Word Length",
+    subtitle = "Based on LA Times crosswords from 2013-2016"
+  ) %>%
+  cols_label(
+    term = "Weekday",
+    estimate = "Estimate",
+    conf.low = "Lower",
+    conf.high = "Upper"
+  ) %>%
+  fmt_number(
+    columns = 2:4,
+    decimals = 2
+  )
+
+lat_model2 
 ```
 
 ```{r writing, echo = FALSE}
@@ -151,7 +186,8 @@ write_rds(joined, "final_shiny/joined.rds")
 
 ```{r uniqueness, echo = FALSE}
 
-# What clues/answers show up more often in more difficult (i.e. later-week) puzzles?
+# Word Length vs difficulty
+
 
 ```
 
