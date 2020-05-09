@@ -10,11 +10,13 @@ library(ggplot2)
 library(janitor)
 library(readxl)
 library(DT)
+library(plotly)
 
 #############################
 #      READING IN DATA      #
 #############################
 joined <- read_rds("joined.rds")
+names <- read_rds("names.rds")
 
 ############################
 #      USER INTERFACE      #
@@ -154,10 +156,44 @@ tabPanel("Word Length vs. Difficulty",
           
 
 #############################
-#      CLUE REFERENCES      #
+#      GENDER ANALYSIS      #
 #############################  
 
-
+tabPanel("Gender Representation",
+         
+         fluidPage(
+           
+           titlePanel("Genders of Most Common Names in Clues"),
+           
+           p(paste("Select an outlet to see the 40 most common names appearing in clues,
+                   broken down by gender. Note that the most common names are overwhelmingly
+                   male. There are some confounding factors in the data (names that are also common
+                   words, like 'rose' and 'mark' might be marked as appearing as names more than they actually
+                   do, but the overall pattern is a trend towards male names.")),
+           
+           br(),
+           
+           p(paste("The names were taken from a list of the 100 most common names for males
+                   and females from 1919-2018.")), 
+           
+           
+           sidebarLayout(
+             sidebarPanel(
+               
+               helpText("Choose an outlet:"),
+               
+               selectInput("name_outlet", h3("Outlet"),
+                           choices = list("NYT",
+                                          "LAT")),
+             ),
+             
+             # Show a plot of the generated distribution
+             mainPanel(
+               plotOutput("nameplot")
+             )
+           )
+           
+         )),
 
 #############################
 #      EXPLORE ANSWERS      #
@@ -308,8 +344,32 @@ server <- function(input, output, session) {
              alt = "This was supposed to be a graph, woof")
       }, deleteFile = FALSE)
       
+###############################
+#       GENDER ANALYSIS       #
+ ##############################
       
-    
+      observe({
+        gen_outlet <- names %>%
+          ungroup() %>%
+          filter(Outlet == input$name_outlet)
+      
+      common_names = gen_outlet %>%
+        slice(1:40)
+
+ 
+      
+      output$nameplot <- renderPlot(
+        ggplot(common_names, aes(reorder(Word, -count), count, 
+                                      fill = gender)) +
+          geom_col() +
+          theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 8)) +
+          xlab("Name") +
+          ylab("Count") +
+          ggtitle("40 Most Frequently-Appearing Names In Clues")
+      )
+      
+      })
+        
   #############################
   #       EXPLORE WORDS       #
   #############################  

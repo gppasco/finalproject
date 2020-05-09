@@ -13,6 +13,8 @@ library(janitor)
 library(readxl)
 library(broom)
 library(gt)
+library(tidytext)
+library(gender)
 ```
 
 ```{r reading, echo=FALSE}
@@ -179,15 +181,15 @@ lat_model2
 ```
 
 ```{r writing, echo = FALSE}
-write_rds(latimes2, "final_shiny/latimes.rds")
-write_rds(nyt, "final_shiny/nytimes.rds")
-write_rds(joined, "final_shiny/joined.rds")
+write_rds(latimes2, "crossword_shiny/latimes.rds")
+write_rds(nyt, "crossword_shiny/nytimes.rds")
+write_rds(joined, "crossword_shiny/joined.rds")
 ```
 
 ```{r uniqueness, echo = FALSE}
 
 # Word Length vs difficulty
-
+# See Shiny app
 
 ```
 
@@ -195,5 +197,38 @@ write_rds(joined, "final_shiny/joined.rds")
 
 # Does the LA Times crossword reference certain people/places more than the NY
 # Times puzzle? What about geographic/country/gender diversity of references?
+
+# Splitting each clue into individual words
+all_clues <- joined %>%
+  select(Outlet, Clue) %>%
+  unnest_tokens("Word", Clue)
+
+# Loading in a dataset of the 100 most popular male and female
+# names, for gender analysis.
+name_tab = read.csv("raw-data/names.csv")
+
+# Reading in name data
+clues_names <- all_clues %>%
+  filter(Word %in% name_tab$Male | Word %in% name_tab$Female) %>%
+  mutate(gender = map(Word, ~ifelse(. %in% name_tab$Male, "Male", "Female"))) %>%
+  unnest(gender) %>%
+  group_by(Outlet, Word, gender) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+
+# Writes this to an .rds file
+write_rds(clues_names, "crossword_shiny/names.rds")
+
+graphnames <- clues_names %>%
+  ungroup %>%
+  filter(Outlet == "NYT") %>%
+  slice(1:50)
+
+ggplot(graphnames, aes(reorder(Word, -count), count, 
+                       fill = gender)) +
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 6)) +
+  xlab("Name") +
+  ylab("Count")
 
 ```
